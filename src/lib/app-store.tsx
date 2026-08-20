@@ -451,7 +451,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Fund source names require at least 3 characters.
       if (name.length < 3 || name.length > 24) return { ok: false, reason: "invalid" };
       let ok = false;
-      const id = `w${Date.now()}`;
+      const id = createWalletId();
       const wallet: Wallet = {
         id,
         name,
