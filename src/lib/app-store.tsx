@@ -147,6 +147,45 @@ export function fundSourceKey(input: { type: WalletType; provider?: string | und
   return `${input.type}::${(input.provider ?? "").trim().toLowerCase()}`;
 }
 
+/**
+ * Collision-proof wallet ids. `Date.now()` alone repeats when two fund sources
+ * are created inside the same millisecond, which made two distinct rows (e.g.
+ * BCA and BRI) share a React key so the second one visually replaced the first.
+ */
+let walletIdCounter = 0;
+export function createWalletId(): string {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return `w${uuid}`;
+  walletIdCounter += 1;
+  return `w${Date.now()}-${walletIdCounter}-${Math.round(Math.random() * 1e6)}`;
+}
+
+/**
+ * Normalizes a persisted wallet list: drops malformed rows and guarantees every
+ * id is unique, so restored state can never collapse two distinct fund sources
+ * into a single rendered row. Names are NOT used for identity.
+ */
+export function dedupeWallets(input: readonly unknown[]): Wallet[] {
+  const seen = new Set<string>();
+  const out: Wallet[] = [];
+  for (const raw of input) {
+    if (!raw || typeof raw !== "object") continue;
+    const w = raw as Partial<Wallet>;
+    if (typeof w.name !== "string" || !w.name.trim()) continue;
+    if (w.type !== "cash" && w.type !== "bank" && w.type !== "ewallet") continue;
+    const id = typeof w.id === "string" && w.id.trim() && !seen.has(w.id) ? w.id : createWalletId();
+    seen.add(id);
+    out.push({
+      id,
+      name: w.name,
+      type: w.type,
+      balance: Number.isFinite(w.balance) ? Number(w.balance) : 0,
+      ...(typeof w.provider === "string" && w.provider.trim() ? { provider: w.provider } : {}),
+    });
+  }
+  return out;
+}
+
 /** Pure duplicate check used by the store and by the forms (and by tests). */
 export function isPocketNameTaken(
   wallets: Wallet[],
