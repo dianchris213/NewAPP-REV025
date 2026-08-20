@@ -188,3 +188,16 @@ Every pull-request run uploads `visual-regression-<PR number>` with `if: always(
 - Filters changed by the user in the current session are respected as-is (an intentional "no results" empty state still shows).
 - The Reset filter button clears `tmab-fund-source-query` / `tmab-fund-source-type` from localStorage and announces the reset via an `aria-live="polite"` summary (`fund-source-filter-reset-notice`).
 - Tests: `src/tests/fund-source-filter.test.ts` (unit) and `src/tests/fund-source-persisted-filter.test.tsx` (integration/E2E: stale `cash` filter with `bank` wallets, reset + focus, API error path).
+
+## Fund source identity (Sumber Dana)
+
+- Wallet ids come from `createWalletId()` (`crypto.randomUUID` with a counter
+  fallback). `Date.now()` alone collided within one millisecond, which made a
+  second row (BRI) overwrite the first (BCA) because they shared a React key.
+- List rows are keyed by `w.id` only — never by name, type, or provider.
+- Restored state passes through `dedupeWallets()`: malformed rows are dropped and
+  ids are made unique, so distinct fund sources are never merged.
+- Persisted filters are validated on load by `sanitizeFilters()`: a stored type
+  filter that matches no wallet falls back to `all`, so the list can never render
+  an empty state while real fund sources exist.
+- Regression coverage: `src/tests/fund-source-identity.test.tsx`.
