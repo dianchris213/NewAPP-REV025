@@ -733,7 +733,10 @@ export function FundSourceSheet({ onClose }: { onClose: () => void }) {
                 const message = rowError && rowError.id === w.id ? rowError.message : null;
                 const firstOfType = index === 0 || list[index - 1]!.type !== w.type;
                 return (
-                  <Fragment key={`group-${w.id}`}>
+                  // Keyed by the wallet's unique id only: names/types are not
+                  // unique, so keying on them made a second row (e.g. BRI)
+                  // overwrite the first (BCA) on render.
+                  <Fragment key={w.id}>
                     {firstOfType ? (
                       <li
                         aria-hidden="true"
@@ -743,7 +746,6 @@ export function FundSourceSheet({ onClose }: { onClose: () => void }) {
                       </li>
                     ) : null}
                     <li
-                      key={w.id}
                       data-testid={`fund-source-item-${w.id}`}
                       className="flex flex-col gap-2 border-b border-outline-variant/20 py-3 last:border-0"
                     >
