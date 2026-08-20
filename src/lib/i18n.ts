@@ -90,6 +90,11 @@ type Dict = {
   fundSourceSaveFailed: string;
   fundSourceSaveFailedHint: string;
   loadingFundSources: string;
+  fundSourceLoadFailed: string;
+  fundSourceLoadFailedHint: string;
+  retryLoadFundSources: string;
+  fundSourceListLabel: string;
+  fundSourceRowLabel: string;
   undoIn: string;
   undoHint: string;
   resetFilter: string;
@@ -191,6 +196,12 @@ const dictionaries: Record<Language, Dict> = {
     fundSourceSaveFailed: "Gagal menyimpan sumber dana. Coba lagi.",
     fundSourceSaveFailedHint: "Data yang Anda isi tetap tersimpan di formulir.",
     loadingFundSources: "Memuat sumber dana…",
+    fundSourceLoadFailed: "Gagal memuat daftar sumber dana.",
+    fundSourceLoadFailedHint:
+      "Data Anda tidak hilang. Periksa koneksi lalu coba muat ulang daftar.",
+    retryLoadFundSources: "Muat ulang daftar",
+    fundSourceListLabel: "Daftar sumber dana",
+    fundSourceRowLabel: "Sumber dana",
     undoIn: "Urungkan dalam",
     undoHint: "Tekan Enter untuk urungkan, Esc untuk tutup.",
     resetFilter: "Reset filter",
@@ -289,6 +300,11 @@ const dictionaries: Record<Language, Dict> = {
     fundSourceSaveFailed: "Could not save the fund source. Please try again.",
     fundSourceSaveFailedHint: "Your input has been kept in the form.",
     loadingFundSources: "Loading fund sources…",
+    fundSourceLoadFailed: "Could not load the fund source list.",
+    fundSourceLoadFailedHint: "Your data is safe. Check your connection and reload the list.",
+    retryLoadFundSources: "Reload list",
+    fundSourceListLabel: "Fund source list",
+    fundSourceRowLabel: "Fund source",
     undoIn: "Undo in",
     undoHint: "Press Enter to undo, Esc to dismiss.",
     resetFilter: "Reset filter",

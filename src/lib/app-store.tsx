@@ -296,6 +296,13 @@ type AppState = {
   deleteWallet: (id: string) => Promise<boolean>;
   /** Re-insert a previously deleted fund source (Undo). */
   restoreWallet: (wallet: Wallet) => boolean;
+  /**
+   * Non-null when the fund-source data could not be read/parsed. The UI must
+   * show an explicit error (toast + inline alert) instead of an empty state.
+   */
+  walletLoadError: string | null;
+  /** Re-attempts the fund-source load after a failure. */
+  reloadWallets: () => void;
   /** In-flight fund-source mutations, for loading state / optimistic UI. */
   walletPending: { add: boolean; byId: Record<string, "rename" | "delete"> };
   walletUsage: (id: string) => number;
@@ -330,6 +337,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     byId: Record<string, "rename" | "delete">;
   }>({ add: false, byId: {} });
   const [profileSaving, setProfileSaving] = useState(false);
+  const [walletLoadError, setWalletLoadError] = useState<string | null>(null);
+  const [loadNonce, setLoadNonce] = useState(0);
+  const reloadWallets = useCallback(() => {
+    setWalletLoadError(null);
+    setLoadNonce((n) => n + 1);
+  }, []);
 
   const addCategory = useCallback((input: { name: string; type: TxType; walletId?: string }) => {
     const name = input.name.trim().replace(/\s+/g, " ");
@@ -756,18 +769,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         setSettings({ ...defaultSettings, ...(parsed.settings ?? {}) });
         if (parsed.language === "id" || parsed.language === "en") setLanguage(parsed.language);
-        if (Array.isArray(parsed.wallets)) setWallets(dedupeWallets(parsed.wallets));
+        if (parsed.wallets !== undefined) {
+          // A changed/corrupt payload shape is a load failure, never an
+          // "empty list": the UI must say so instead of showing empty state.
+          if (!Array.isArray(parsed.wallets)) throw new Error("wallets payload is not a list");
+          setWallets(dedupeWallets(parsed.wallets));
+        }
         if (Array.isArray(parsed.walletActivity)) setWalletActivity(parsed.walletActivity);
         if (Array.isArray(parsed.categories)) setCategories(parsed.categories);
         if (parsed.settings?.biometricLock) setLocked(true);
       } else {
         setTransactions(seedTransactions());
       }
-    } catch {
+      setWalletLoadError(null);
+    } catch (cause) {
       setTransactions(seedTransactions());
+      setWalletLoadError(cause instanceof Error ? cause.message : "wallet load failed");
     }
     setHydrated(true);
-  }, []);
+  }, [loadNonce]);
 
   // Persist off the render path and coalesced, so rapid state updates never
   // block the UI with repeated JSON serialization.
@@ -925,6 +945,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       renameWallet,
       deleteWallet,
       restoreWallet,
+      walletLoadError,
+      reloadWallets,
       walletPending,
       walletUsage,
       topUpWallet,
@@ -974,6 +996,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       renameWallet,
       deleteWallet,
       restoreWallet,
+      walletLoadError,
+      reloadWallets,
       walletPending,
       walletUsage,
       topUpWallet,
