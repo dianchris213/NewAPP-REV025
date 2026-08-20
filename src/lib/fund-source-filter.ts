@@ -7,6 +7,57 @@
  * list always shows the user's real data instead of an empty state.
  */
 
+import { z } from "zod";
+
+/** Strict schema for the persisted filter payload. Anything else -> "all". */
+export const fundSourceTypeFilterSchema = z.enum(["all", "cash", "bank", "ewallet"]);
+
+export const fundSourceFiltersSchema = z
+  .object({
+    query: z.string().max(40),
+    type: fundSourceTypeFilterSchema,
+  })
+  .strict();
+
+export type StoredFundSourceType = z.infer<typeof fundSourceTypeFilterSchema>;
+
+/**
+ * Parses a persisted type filter with a hard fallback to "all".
+ * `availableTypes` (optional) guards against API shape/vocabulary changes: a
+ * syntactically valid value that no longer exists in the data is also reset.
+ */
+export function parseStoredTypeFilter(
+  value: unknown,
+  availableTypes?: readonly string[],
+): StoredFundSourceType {
+  const parsed = fundSourceTypeFilterSchema.safeParse(value);
+  if (!parsed.success) return "all";
+  if (parsed.data === "all") return "all";
+  if (availableTypes && availableTypes.length > 0 && !availableTypes.includes(parsed.data)) {
+    return "all";
+  }
+  return parsed.data;
+}
+
+/** Parses a whole persisted filter object, falling back field by field. */
+export function parseStoredFilters(
+  value: unknown,
+  availableTypes?: readonly string[],
+): { query: string; type: StoredFundSourceType } {
+  const parsed = fundSourceFiltersSchema.safeParse(value);
+  if (parsed.success) {
+    return {
+      query: parsed.data.query,
+      type: parseStoredTypeFilter(parsed.data.type, availableTypes),
+    };
+  }
+  const raw = (value ?? {}) as Record<string, unknown>;
+  return {
+    query: typeof raw['query'] === "string" ? raw['query'].slice(0, 40) : "",
+    type: parseStoredTypeFilter(raw['type'], availableTypes),
+  };
+}
+
 export type FundSourceTypeFilter = "all" | string;
 
 export type FundSourceFilters = {
